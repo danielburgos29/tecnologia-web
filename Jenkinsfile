@@ -2,39 +2,43 @@ pipeline {
     agent any
 
     stages {
-        stage('Clonar repositorio'){
+        stage('Clonar el Repositorio'){
             steps {
-                git branch: 'main', 
-                credentialsId: 'git-jenkins', 
-                url: 'https://https://github.com/danielburgos29/tecnologia-web
+                git branch: 'origin/main', url: 'https://github.com/XxtheTianxX/MICRO-BALANCEO'
+            }
         }
-
-        stage('Construir image de docker'){
+        stage('Construir imagen de Docker'){
             steps {
-                    script {
-                        withCredentials([
-                            string(credentialsId: 'MONGO_URI', variable: 'MONGO_URI')
-                        ]) {
-                            sh """
-                            docker build --build-arg MONGO_URI=${MONGO_URI} -t proyectos-micros:v1 .
-                            """  
-                        }
+                script {
+                    withCredentials([
+                        string(credentialsId: 'MONGO_URI', variable: 'MONGO_URI')
+                    ]) {
+                        docker.build('proyectos-micro:v1', '--build-arg MONGO_URI=${MONGO_URI} .')
                     }
                 }
+            }
         }
-
         stage('Desplegar contenedores Docker'){
             steps {
                 script {
                     withCredentials([
                             string(credentialsId: 'MONGO_URI', variable: 'MONGO_URI')
                     ]) {
-                        sh """
-                            docker-compose -f docker-compose.yml up -d
-                        """
+                        sh 'docker-compose up -d'
                     }
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            emailext (
+                subject: "Status del build: ${currentBuild.currentResult}",
+                body: "Se ha completado el build. Puede detallar en: ${env.BUILD_URL}",
+                to: "sebastian.gomezp@est.iudigital.edu.co",
+                from: "jenkins@iudigital.edu.co"
+            )
         }
     }
 }
